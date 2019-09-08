@@ -1,31 +1,31 @@
 package greenfly
 
-import cats.data._
-import cats.implicits._
-import cats.effect.IO
+import java.util.UUID
+
+import cats._
 import cats.free.Free
-import cats.free.Free.liftF
+import cats.implicits._
+import greenfly.InfraIO._
 
 package object aws {
-  type Env = Map[String, String]
-  type Log = Vector[String]
-  type StateMap = Map[String, Any]
-  type InfraIO[A] = ReaderWriterStateT[IO, Env, Log, StateMap, A]
-
-  object InfraIO {
-    def pure[A](a: A): InfraIO[A] = ReaderWriterStateT.pure[IO, Env, Log, StateMap, A](a)
-
-    def tell[A](log: Log): InfraIO[Unit] = ReaderWriterStateT.tell[IO, Env, Log, StateMap](log)
-
-    def inspect[A](f: StateMap => A): InfraIO[A] = ReaderWriterStateT.inspect[IO, Env, Log, StateMap, A](f)
-    def modify[A](f: StateMap => StateMap): InfraIO[Unit] = ReaderWriterStateT.modify[IO, Env, Log, StateMap](f)
-  }
-
   type Aws[A] = Free[AwsOp, A]
 
-  def vpc(name: String, cidr: Cidr): Aws[Vpc] =
-    liftF(VpcOp(name, cidr))
-
-  def subnet(name: String, vpcId: VpcId, cidr: Cidr): Aws[Subnet] =
-    liftF(SubnetOp(name, vpcId, cidr))
+  val AwsCompiler: AwsOp ~> InfraIO = new (AwsOp ~> InfraIO) {
+    override def apply[A](fa: AwsOp[A]): InfraIO[A] = fa match {
+      case VpcOp(name, cidr) =>
+        for {
+          _ <- tell(Vector(s"Provisioning aws.Vpc($name, $cidr)"))
+          s <- inspect(_.get(name).map(VpcId))
+          id = s.getOrElse(VpcId(UUID.randomUUID().toString))
+          _ <- modify(_.updated(name, id.unwrap))
+        } yield Vpc(name, cidr, id).asInstanceOf[A]
+      case SubnetOp(name, vpcId, cidr) =>
+        for {
+          _ <- tell(Vector(s"Provisioning aws.Subnet($name, $vpcId, $cidr)"))
+          s <- inspect(_.get(name).map(SubnetId))
+          id = s.getOrElse(SubnetId(UUID.randomUUID().toString))
+          _ <- modify(_.updated(name, id.unwrap))
+        } yield Subnet(name, vpcId, cidr, id)
+    }
+  }
 }
