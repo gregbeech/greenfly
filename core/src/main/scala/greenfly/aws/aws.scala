@@ -19,5 +19,5 @@ class AwsOps[F[_]](implicit I: InjectK[AwsOp, F]) {
 }
 
 object AwsOps {
-  implicit def awsK[F[_]](implicit I: InjectK[AwsOp, F]): AwsOps[F] = new AwsOps[F]
+  implicit def awsOps[F[_]](implicit I: InjectK[AwsOp, F]): AwsOps[F] = new AwsOps[F]
 }

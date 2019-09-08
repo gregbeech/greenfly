@@ -48,7 +48,9 @@ lazy val buildSettings = Seq(
 //    "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
 //    "-Ywarn-unused:privates",            // Warn if a private member is unused.
     //    "-Ywarn-value-discard"               // Warn when non-Unit expression results are unused.
-  )
+  ),
+  resolvers += Resolver.sonatypeRepo("releases"),
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3")
 )
 
 lazy val core = (project in file("core")).

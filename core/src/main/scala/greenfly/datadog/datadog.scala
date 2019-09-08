@@ -14,5 +14,5 @@ class DatadogOps[F[_]](implicit I: InjectK[DatadogOp, F]) {
 }
 
 object DatadogOps {
-  implicit def datadogK[F[_]](implicit I: InjectK[DatadogOp, F]): DatadogOps[F] = new DatadogOps[F]
+  implicit def datadogOps[F[_]](implicit I: InjectK[DatadogOp, F]): DatadogOps[F] = new DatadogOps[F]
 }
